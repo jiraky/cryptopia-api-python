@@ -5,8 +5,7 @@
 * @rutrus
 
 ## Overview
-This wrapper provides a friendly way to call Cryptopia API from a Python 2.7 script.
-Requires requests 2.8.1
+This wrapper provides a friendly way to call Cryptopia API from a Python 3 script.
 
 ## Usage
 Just import it and use it.

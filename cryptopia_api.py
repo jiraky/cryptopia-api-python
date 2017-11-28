@@ -1,21 +1,26 @@
-#! /usr/bin/python2
-# -*- coding: utf-8 -*-
+#! /usr/bin/python3
 """ This is a wrapper for Cryptopia.co.nz API """
 
 import requests
 import hashlib
 import urllib
+import urllib.parse
 import base64
 import hmac
+import logging
 import json
 import time
+import re
+from collections import OrderedDict
+
+__version__ = "20171127"
 
 class Api(object):
     """ Represents a wrapper for cryptopia API """
 
     def __init__(self, key, secret):
         self.key = key
-        self.secret = secret
+        self.secret = secret.encode("utf8")
         self.public = {
             'GetCurrencies',
             'GetTradePairs',
@@ -38,9 +43,9 @@ class Api(object):
 
     def api_query(self, feature_requested, get_parameters=None, post_parameters=None):
         """ Performs a generic api request """
-        #time.sleep(1) # reduce over-usage
+        time.sleep(1)
         if feature_requested in self.private:
-            url = "https://www.cryptopia.co.nz/Api/" + feature_requested
+            url = "https://www.cryptopia.co.nz/api/" + feature_requested + "/"
             post_data = json.dumps(post_parameters)
             headers = self.secure_headers(url=url, post_data=post_data)
             req = requests.post(url, data=post_data, headers=headers)
@@ -49,19 +54,18 @@ class Api(object):
                     req.raise_for_status()
                 except requests.exceptions.RequestException as ex:
                     return None, "Status Code : " + str(ex)
-            req = req.json()
+            try:
+                # Remove bad format and encoding "iso-8859-1"
+                matched = re.match(r"[^{]*({.*}).*",req.text).group(1)
+                req = json.loads(matched)
+            except:
+                print(req.text)
             if req['Success'] is True:
                 result = req['Data']
                 error = None
             else:
                 result = None
-                try:
-                    if req['Message'] is None:
-                        error = "Unknown response error"
-                    else:
-                        error = req['Message']
-                except:
-                    error = req
+                error = req
             return (result, error)
         elif feature_requested in self.public:
             url = "https://www.cryptopia.co.nz/Api/" + feature_requested + "/" + \
@@ -73,7 +77,8 @@ class Api(object):
                     req.raise_for_status()
                 except requests.exceptions.RequestException as ex:
                     return None, "Status Code : " + str(ex)
-            req = req.json()
+            matched = re.match(r"[^{]*({.*}).*",req.text).group(1)
+            req = json.loads(matched)
             if req['Success'] is True:
                 result = req['Data']
                 error = None
@@ -95,19 +100,29 @@ class Api(object):
         """ GEts all the trade pairs """
         return self.api_query(feature_requested='GetTradePairs')
 
-    def get_markets(self):
+    def get_markets(self, baseMarket = None, hours = None):
         """ Gets data for all markets """
-        return self.api_query(feature_requested='GetMarkets')
+        get_parameters = OrderedDict({})
+        if baseMarket:
+            get_parameters['market'] = baseMarket
+        if hours:
+            get_parameters['hours'] = str(hours)
+        return self.api_query(feature_requested='GetMarkets',get_parameters=get_parameters)
 
-    def get_market(self, market):
+    def get_market(self, market, hours = None):
         """ Gets market data """
+        get_parameters=OrderedDict({'market': market})
+        if hours: get_parameters['hours'] = str(hours)
         return self.api_query(feature_requested='GetMarket',
-                              get_parameters={'market': market})
+                              get_parameters=get_parameters)
 
-    def get_history(self, market):
+    def get_history(self, market, hours = None):
         """ Gets the full order history for the market (all users) """
+        get_parameters = OrderedDict({'market': market})
+        if hours:
+            get_parameters['hours'] = str(hours)
         return self.api_query(feature_requested='GetMarketHistory',
-                              get_parameters={'market': market})
+                                get_parameters=get_parameters)
 
     def get_orders(self, market):
         """ Gets the user history for the specified market """
@@ -187,11 +202,15 @@ class Api(object):
         """ Creates secure header for cryptopia private api. """
         nonce = str(int(time.time()))
         md5 = hashlib.md5()
-        md5.update(post_data)
+        md5.update(post_data.encode("utf-8"))
         rcb64 = base64.b64encode(md5.digest())
-        signature = self.key + "POST" + \
-            urllib.quote_plus(url).lower() + nonce + rcb64
+        quoteplus = urllib.parse.quote_plus(url).lower()
+        signature = bytearray()
+        signature += (self.key + "POST" + quoteplus + nonce).encode() + rcb64 #.encode("utf8")
         sign = base64.b64encode(
-            hmac.new(base64.b64decode(self.secret), signature, hashlib.sha256).digest())
-        header_value = "amx " + self.key + ":" + sign + ":" + nonce
+            hmac.new(base64.b64decode( self.secret), signature,
+            hashlib.sha256).digest())
+        header_value = "amx " + self.key + ":" + sign.decode("utf8") + ":" + nonce
         return {'Authorization': header_value, 'Content-Type': 'application/json; charset=utf-8'}
+
+#print("API Version ",__version__)

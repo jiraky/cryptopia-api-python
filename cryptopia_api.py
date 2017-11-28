@@ -1,12 +1,14 @@
+#! /usr/bin/python2
+# -*- coding: utf-8 -*-
 """ This is a wrapper for Cryptopia.co.nz API """
 
+import requests
+import hashlib
 import urllib
+import base64
+import hmac
 import json
 import time
-import hmac
-import hashlib
-import base64
-import requests
 
 class Api(object):
     """ Represents a wrapper for cryptopia API """
@@ -14,15 +16,29 @@ class Api(object):
     def __init__(self, key, secret):
         self.key = key
         self.secret = secret
-        self.public = ['GetCurrencies', 'GetTradePairs', 'GetMarkets',
-                       'GetMarket', 'GetMarketHistory', 'GetMarketOrders', 'GetMarketOrderGroups']
-        self.private = ['GetBalance', 'GetDepositAddress', 'GetOpenOrders',
-                        'GetTradeHistory', 'GetTransactions', 'SubmitTrade',
-                        'CancelTrade', 'SubmitTip', 'SubmitWithdraw', 'SubmitTransfer']
+        self.public = {
+            'GetCurrencies',
+            'GetTradePairs',
+            'GetMarkets',
+            'GetMarket',
+            'GetMarketHistory',
+            'GetMarketOrders',
+            'GetMarketOrderGroups'}
+        self.private = {
+            'GetBalance',
+            'GetDepositAddress',
+            'GetOpenOrders',
+            'GetTradeHistory',
+            'GetTransactions',
+            'SubmitTrade',
+            'CancelTrade',
+            'SubmitTip',
+            'SubmitWithdraw',
+            'SubmitTransfer'}
 
     def api_query(self, feature_requested, get_parameters=None, post_parameters=None):
         """ Performs a generic api request """
-        time.sleep(1)
+        #time.sleep(1) # reduce over-usage
         if feature_requested in self.private:
             url = "https://www.cryptopia.co.nz/Api/" + feature_requested
             post_data = json.dumps(post_parameters)
@@ -39,10 +55,13 @@ class Api(object):
                 error = None
             else:
                 result = None
-                if req['Message'] is None:
-                    error = "Unknown response error"
-                else:
-                    error = req['Message']
+                try:
+                    if req['Message'] is None:
+                        error = "Unknown response error"
+                    else:
+                        error = req['Message']
+                except:
+                    error = req
             return (result, error)
         elif feature_requested in self.public:
             url = "https://www.cryptopia.co.nz/Api/" + feature_requested + "/" + \
@@ -173,6 +192,6 @@ class Api(object):
         signature = self.key + "POST" + \
             urllib.quote_plus(url).lower() + nonce + rcb64
         sign = base64.b64encode(
-            hmac.new(self.secret, signature, hashlib.sha256).digest())
+            hmac.new(base64.b64decode(self.secret), signature, hashlib.sha256).digest())
         header_value = "amx " + self.key + ":" + sign + ":" + nonce
         return {'Authorization': header_value, 'Content-Type': 'application/json; charset=utf-8'}

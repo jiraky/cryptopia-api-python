@@ -1,5 +1,7 @@
 # API keys. Configuration file.
 **/trading.conf
+**/secrets.json
+**/testing.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

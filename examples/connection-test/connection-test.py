@@ -1,5 +1,4 @@
-#! /usr/bin/python2
-# -*- coding: utf-8 -*-
+#! /usr/bin/python3
 from cryptopia_api import Api
 import configparser
 import os
@@ -17,10 +16,10 @@ def readConfig(exchange = ''):
     parser.read(config['CONF_FILE'])
     if not parser.has_section(exchange):
         parser.add_section(exchange)
-        save = (raw_input("Save? Y/N").lower() == 'y') or True # always save
+        save = (input("Save? Y/N").lower() == 'y') or True # always save
         #if not config[exchange][0]:
-        key0 = raw_input("Insert PUBLIC API KEY for exchange "+exchange+" ")
-        key1 = raw_input("Insert PRIVATE API KEYfor exchange "+exchange+" ")
+        key0 = input("Insert PUBLIC API KEY for exchange "+exchange+" ")
+        key1 = input("Insert PRIVATE API KEYfor exchange "+exchange+" ")
         parser.set(exchange,'public_key', key0)
         parser.set(exchange,'private_key', key1)
     if save:

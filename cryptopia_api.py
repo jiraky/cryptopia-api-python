@@ -16,15 +16,16 @@ import json
 import time
 import re
 from collections import OrderedDict
+import configuration
 
-__version__ = "20171127"
+__version__ = "20171130"
 
 class Api(object):
     """ Represents a wrapper for cryptopia API """
 
-    def __init__(self, key, secret):
-        self.key = key
-        self.secret = secret.encode("utf8")
+    def __init__(self, key = None, secret = None):
+        self.key = key or configuration.get_values("cryptopia","public_key")
+        self.secret = secret or configuration.get_values("cryptopia","public_key")
         self.public = {
             'GetCurrencies',
             'GetTradePairs',

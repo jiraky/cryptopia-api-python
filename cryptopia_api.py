@@ -1,13 +1,17 @@
 #! /usr/bin/python3
 """ This is a wrapper for Cryptopia.co.nz API """
 
+# TODO
+# - Log all actions
+# - Timer connections
+
 import requests
 import hashlib
 import urllib
 import urllib.parse
 import base64
 import hmac
-import logging
+#import logging
 import json
 import time
 import re
@@ -213,4 +217,5 @@ class Api(object):
         header_value = "amx " + self.key + ":" + sign.decode("utf8") + ":" + nonce
         return {'Authorization': header_value, 'Content-Type': 'application/json; charset=utf-8'}
 
+# Better use loggin
 #print("API Version ",__version__)

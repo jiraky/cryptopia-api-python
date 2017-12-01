@@ -20,19 +20,18 @@ def _readConfig(configfile = "trading.conf"):
     global config
     global parser
     config['CONF_FILE'] = os.path.join(os.path.dirname(__file__),configfile)
-    parser = configparser.ConfigParser(allow_no_value=True)
-    createFile = not os.path.isfile(config['CONF_FILE'])
-    if createFile:
+    if not os.path.isfile(config['CONF_FILE']):
         _create(config['CONF_FILE'])
-        set_values(configparser.DEFAULTSECT, 'public_key', None)
-        set_values(configparser.DEFAULTSECT, 'private_key', None)
-        set_values(configparser.DEFAULTSECT, 'watch_pairs', None)
+        logging.warning("New file created")
+    parser = configparser.ConfigParser(allow_no_value=True)
     parser.read(config['CONF_FILE'])
     return parser
 
 def set_values(exchange,key,value):
+    """ After configuration file is readed """
     try:
         if parser is None:
+            logging.debug("set_values -> reading file")
             read(exchange)
         parser.set(exchange,key,value)
         return _save()
@@ -42,13 +41,14 @@ def set_values(exchange,key,value):
 
 def get_values(exchange,key):
     if parser is None:
-        _readConfig(exchange)
+        logging.info("File not readed")
+        read(exchange)
     try:
         value = parser.get(exchange,key)
         return value
     except:
         return False
-    
+
 def read(exchange = ''):
     """ Easy human-readable configuration """
     global config

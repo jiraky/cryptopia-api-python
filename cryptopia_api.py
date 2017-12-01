@@ -11,7 +11,7 @@ import urllib
 import urllib.parse
 import base64
 import hmac
-#import logging
+import logging
 import json
 import time
 import re
@@ -24,8 +24,8 @@ class Api(object):
     """ Represents a wrapper for cryptopia API """
 
     def __init__(self, key = None, secret = None):
-        self.key = key or configuration.get_values("cryptopia","public_key")
-        self.secret = secret or configuration.get_values("cryptopia","public_key")
+        self.key = configuration.get_values("cryptopia","public_key")
+        self.secret = configuration.get_values("cryptopia","private_key")
         self.public = {
             'GetCurrencies',
             'GetTradePairs',
@@ -45,16 +45,22 @@ class Api(object):
             'SubmitTip',
             'SubmitWithdraw',
             'SubmitTransfer'}
+        self.startTimer = 0
 
     def api_query(self, feature_requested, get_parameters=None, post_parameters=None):
         """ Performs a generic api request """
-        time.sleep(1)
+        while (time.time() - self.startTimer + 1 < 2):
+            pass
+        self.startTimer = time.time()
         if feature_requested in self.private:
             url = "https://www.cryptopia.co.nz/api/" + feature_requested + "/"
             post_data = json.dumps(post_parameters)
             headers = self.secure_headers(url=url, post_data=post_data)
             req = requests.post(url, data=post_data, headers=headers)
+            logging.info("Request {} solved in {} seconds.".format(
+                feature_requested,(time.time()-self.startTimer)))
             if req.status_code != 200:
+                logging.warning("Status code: {}.\nContent-text: {}".format(req.status_code,req.text))
                 try:
                     req.raise_for_status()
                 except requests.exceptions.RequestException as ex:
@@ -64,11 +70,12 @@ class Api(object):
                 matched = re.match(r"[^{]*({.*}).*",req.text).group(1)
                 req = json.loads(matched)
             except:
-                print(req.text)
+                logging.error("Content is not JSON-compatible: {}".format(req.text))
             if req['Success'] is True:
                 result = req['Data']
                 error = None
             else:
+                logging.warning("Response is not \"Success\"")
                 result = None
                 error = req
             return (result, error)
@@ -77,7 +84,10 @@ class Api(object):
                   '/'.join(i for i in get_parameters.values()
                            ) if get_parameters != None else ""
             req = requests.get(url, params=get_parameters)
+            logging.info("Request {} solved in {} seconds.".format(
+                feature_requested,(time.time()-self.startTimer)))
             if req.status_code != 200:
+                logging.warning("Status code: {}.\nContent-text: {}".format(req.status_code,req.text))
                 try:
                     req.raise_for_status()
                 except requests.exceptions.RequestException as ex:
@@ -88,6 +98,7 @@ class Api(object):
                 result = req['Data']
                 error = None
             else:
+                logging.warning("Response is not \"Success\"")
                 result = None
                 if req['Message'] is None:
                     error = "Unknown response error"
@@ -102,7 +113,7 @@ class Api(object):
         return self.api_query(feature_requested='GetCurrencies')
 
     def get_tradepairs(self):
-        """ GEts all the trade pairs """
+        """ Gets all the trade pairs """
         return self.api_query(feature_requested='GetTradePairs')
 
     def get_markets(self, baseMarket = None, hours = None):

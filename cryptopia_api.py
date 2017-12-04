@@ -81,8 +81,8 @@ class Api(object):
             return (result, error)
         elif feature_requested in self.public:
             url = "https://www.cryptopia.co.nz/Api/" + feature_requested + "/" + \
-                  '/'.join(i for i in get_parameters.values()
-                           ) if get_parameters != None else ""
+                  ('/'.join(i for i in get_parameters.values()
+                           ) if get_parameters != None else "")
             req = requests.get(url, params=get_parameters)
             logging.info("Request {} solved in {} seconds.".format(
                 feature_requested,(time.time()-self.startTimer)))

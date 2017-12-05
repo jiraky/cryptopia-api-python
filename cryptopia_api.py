@@ -1,10 +1,6 @@
 #! /usr/bin/python3
 """ This is a wrapper for Cryptopia.co.nz API """
 
-# TODO
-# - Log all actions
-# - Timer connections
-
 import requests
 import hashlib
 import urllib
@@ -222,9 +218,9 @@ class Api(object):
         rcb64 = base64.b64encode(md5.digest())
         quoteplus = urllib.parse.quote_plus(url).lower()
         signature = bytearray()
-        signature += (self.key + "POST" + quoteplus + nonce).encode() + rcb64 #.encode("utf8")
+        signature += (self.key + "POST" + quoteplus + nonce).encode() + rcb64
         sign = base64.b64encode(
-            hmac.new(base64.b64decode( self.secret), signature,
+            hmac.new(base64.b64decode(self.secret), signature,
             hashlib.sha256).digest())
         header_value = "amx " + self.key + ":" + sign.decode("utf8") + ":" + nonce
         return {'Authorization': header_value, 'Content-Type': 'application/json; charset=utf-8'}
